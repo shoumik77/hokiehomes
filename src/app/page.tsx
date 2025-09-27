@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import ListingCard from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,8 +176,27 @@ export default function Home() {
                 )}
               </div>
               {aiAnalysis && (
-                <div className="mt-3 whitespace-pre-wrap text-sm bg-background/60 border rounded-md p-3">
-                  {aiAnalysis}
+                <div className="mt-3 bg-background/60 border border-white/10 rounded-md overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5">
+                    <div className="text-xs uppercase tracking-wide text-white/70">AI comparison</div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-xs border-white/20 hover:border-white/30 hover:bg-white/10"
+                        onClick={() => navigator.clipboard.writeText(aiAnalysis)}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-3 overflow-x-auto">
+                    <div className="prose prose-invert prose-sm max-w-none [--tw-prose-bullets:theme(colors.white/60%)] [--tw-prose-counters:theme(colors.white/60%)] [--tw-prose-links:theme(colors.white)] [--tw-prose-th-borders:theme(colors.white/10%)] [--tw-prose-td-borders:theme(colors.white/10%)]">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {aiAnalysis}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
