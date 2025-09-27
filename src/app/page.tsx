@@ -29,6 +29,29 @@ export default function Home() {
   const [results, setResults] = useState<Result[]>([]);
   const [query, setQuery] = useState("");
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadRealListingsWithFilters = async (filters: any) => {
+    try {
+      let url = `/api/listings?city=${filters.city || 'Blacksburg'}&state=VA`;
+      if (filters.maxBedrooms) url += `&maxBedrooms=${filters.maxBedrooms}`;
+      if (filters.minBedrooms) url += `&minBedrooms=${filters.minBedrooms}`;
+      if (filters.maxPrice) url += `&maxPrice=${filters.maxPrice}`;
+      if (filters.nearVT) url += '&nearVT=true';
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      const listings = data.listings.map((listing: any) => ({
+        ...listing,
+        explanation: [`${listing.bedrooms} bedroom property`, `$${listing.price}`, listing.address]
+      }));
+      setResults(listings);
+    } catch (error) {
+      console.error('Failed to load listings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const selected = results.filter((r) => compareIds.includes(r.id));
 
@@ -54,19 +77,26 @@ export default function Home() {
           </p>
           <form
             className="mt-6 flex flex-col sm:flex-row gap-3"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               const text = query.trim();
               if (!text) return;
-              // simple bridge to ChatSearch behavior via fetch
-              fetch("/api/search", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: text }),
-              })
-                .then((r) => r.json())
-                .then((d) => setResults(d.results || []))
-                .catch(() => {});
+              
+              setLoading(true);
+              try {
+                // Use Gemini to parse natural language
+                const parseResponse = await fetch('/api/parse-query', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ query: text })
+                });
+                const { filters } = await parseResponse.json();
+                
+                loadRealListingsWithFilters(filters);
+              } catch (error) {
+                console.error('Parse error:', error);
+                loadRealListingsWithFilters({});
+              }
             }}
           >
             <Input
