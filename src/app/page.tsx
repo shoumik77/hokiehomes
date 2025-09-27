@@ -36,6 +36,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [recommendations, setRecommendations] = useState<{analysis: string, recommendations: string[]} | null>(null);
 
   const loadRealListingsWithFilters = async (filters: any) => {
     try {
@@ -171,6 +172,26 @@ export default function Home() {
                 >
                   {aiLoading ? 'Analyzing…' : 'Ask AI to compare'}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className=""
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/recommend', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ selectedListings: selected })
+                      });
+                      const data = await response.json();
+                      setRecommendations({ analysis: data.analysis, recommendations: [] });
+                    } catch (error) {
+                      console.error('Failed to get recommendations:', error);
+                    }
+                  }}
+                >
+                  Get Recommendations
+                </Button>
                 {aiAnalysis && (
                   <Button size="sm" variant="secondary" onClick={() => setAiAnalysis("")}>Clear</Button>
                 )}
@@ -196,6 +217,14 @@ export default function Home() {
                         {aiAnalysis}
                       </ReactMarkdown>
                     </div>
+                  </div>
+                </div>
+              )}
+              {recommendations && (
+                <div className="mt-3 p-4 bg-card rounded-lg border shadow-lg">
+                  <h4 className="font-semibold mb-3 text-base">AI Analysis</h4>
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap font-mono bg-black/20 p-3 rounded border">
+                    {recommendations.analysis}
                   </div>
                 </div>
               )}

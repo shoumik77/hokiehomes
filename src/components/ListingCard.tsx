@@ -33,8 +33,17 @@ export default function ListingCard({
   selected?: boolean;
   onToggleCompare?: (id: string) => void;
 }) {
+  const handleCardClick = () => {
+    if (data.url) {
+      window.open(data.url, '_blank');
+    }
+  };
+
   return (
-    <Card className={cn("overflow-hidden hover:shadow-md transition", selected && "ring-2 ring-primary")}> 
+    <Card 
+      className={cn("overflow-hidden hover:shadow-md transition cursor-pointer", selected && "ring-2 ring-primary")}
+      onClick={handleCardClick}
+    > 
       <div className="relative h-40 w-full">
         <Image
           src={data.imageUrl}
@@ -80,13 +89,15 @@ export default function ListingCard({
           </ul>
         )}
         <div className="flex items-center gap-2">
-          {data.url && (
-            <Button asChild size="sm">
-              <a href={data.url} target="_blank" rel="noreferrer">View</a>
-            </Button>
-          )}
           {onToggleCompare && (
-            <Button size="sm" variant={selected ? "default" : "outline"} onClick={() => onToggleCompare?.(data.id)}>
+            <Button 
+              size="sm" 
+              variant={selected ? "default" : "outline"} 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCompare(data.id);
+              }}
+            >
               {selected ? "In compare" : "Compare"}
             </Button>
           )}
