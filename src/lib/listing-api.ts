@@ -45,8 +45,11 @@ export async function fetchListings(params: {
   city?: string;
   state?: string;
   maxPrice?: number;
+  minPrice?: number;
   minBedrooms?: number;
   maxBedrooms?: number;
+  minBathrooms?: number;
+  maxBathrooms?: number;
   nearVT?: boolean;
   limit?: number;
 }): Promise<Listing[]> {
@@ -73,9 +76,12 @@ export async function fetchListings(params: {
       .slice(0, params.limit || 50)
       .map(transformToListing)
       .filter((listing: Listing) => {
+        if (params.minPrice && listing.price < params.minPrice) return false;
         if (params.maxPrice && listing.price > params.maxPrice) return false;
         if (params.minBedrooms && listing.bedrooms < params.minBedrooms) return false;
         if (params.maxBedrooms && listing.bedrooms > params.maxBedrooms) return false;
+        if (typeof params.minBathrooms === 'number' && (listing.bathrooms ?? 0) < params.minBathrooms) return false;
+        if (typeof params.maxBathrooms === 'number' && (listing.bathrooms ?? 0) > params.maxBathrooms) return false;
         if (params.nearVT) {
           const distance = calculateDistance(listing.lat, listing.lng, VT_LAT, VT_LNG);
           if (distance > 10) return false; // Only within 10 miles of VT

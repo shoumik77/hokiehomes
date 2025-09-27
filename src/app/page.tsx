@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import LeafletMap from "@/components/LeafletMap";
+import dynamic from "next/dynamic";
 import ListingCard from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+
+const LeafletMap = dynamic(() => import("@/components/LeafletMap").then(m => m.default), { ssr: false });
 
 export type Result = {
   id: string;
@@ -30,13 +32,18 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<string>("");
 
   const loadRealListingsWithFilters = async (filters: any) => {
     try {
-      let url = `/api/listings?city=${filters.city || 'Blacksburg'}&state=VA`;
+      let url = `/api/listings?city=${filters.city || 'Blacksburg'}&state=${filters.state || 'VA'}`;
       if (filters.maxBedrooms) url += `&maxBedrooms=${filters.maxBedrooms}`;
       if (filters.minBedrooms) url += `&minBedrooms=${filters.minBedrooms}`;
       if (filters.maxPrice) url += `&maxPrice=${filters.maxPrice}`;
+      if (filters.minPrice) url += `&minPrice=${filters.minPrice}`;
+      if (filters.minBathrooms) url += `&minBathrooms=${filters.minBathrooms}`;
+      if (filters.maxBathrooms) url += `&maxBathrooms=${filters.maxBathrooms}`;
       if (filters.nearVT) url += '&nearVT=true';
       
       const response = await fetch(url);
@@ -59,20 +66,15 @@ export default function Home() {
     <div className="min-h-screen font-sans">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 bg-center bg-cover"
-          style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1541976076758-347942db1970?q=80&w=2069&auto=format&fit=crop)",
-          }}
-        />
-        <div className="absolute inset-0 -z-10 bg-black/40" />
+        {/* Vercel-like dark gradient background with subtle grid */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black via-neutral-900 to-black" />
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-30 [background-image:radial-gradient(transparent_1px,rgba(0,0,0,0.9)_1px)] [background-size:16px_16px]" />
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <Badge className="mb-4">MVP</Badge>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
             HokieHomes AI
           </h1>
-          <p className="mt-3 text-white/90 max-w-2xl">
+          <p className="mt-3 text-white/80 max-w-2xl">
             Natural‑language housing search for Virginia Tech students. Describe your ideal place — we'll parse it and rank matches.
           </p>
           <form
@@ -100,12 +102,17 @@ export default function Home() {
             }}
           >
             <Input
-              className="h-12 text-base bg-white/95"
+              className="h-12 text-base bg-white/5 text-white placeholder:text-white/50 border-white/10 focus-visible:ring-white/30"
               placeholder="Try: 2BR under $1,200 near VT, pet-friendly with a gym, ≤15-min bus"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <Button type="submit" className="h-12 px-6">Search</Button>
+            <Button
+              type="submit"
+              className="h-12 px-6 bg-gradient-to-b from-white to-neutral-300 text-black hover:from-white hover:to-white border border-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.1)_inset]"
+            >
+              Search
+            </Button>
           </form>
         </div>
       </section>
@@ -122,6 +129,55 @@ export default function Home() {
                   <Badge key={s.id} variant="secondary">{s.title}</Badge>
                 ))}
               </div>
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  disabled={aiLoading}
+                  onClick={async () => {
+                    try {
+                      setAiLoading(true);
+                      const payload = {
+                        userQuery: query,
+                        listings: selected.map((s) => ({
+                          id: s.id,
+                          title: s.title,
+                          address: s.address,
+                          price: s.price,
+                          bedrooms: s.bedrooms,
+                          bathrooms: s.bathrooms,
+                          sqft: s.sqft,
+                          petsAllowed: s.petsAllowed,
+                          amenities: s.amenities,
+                          lat: s.lat,
+                          lng: s.lng,
+                          url: s.url,
+                        })),
+                      };
+                      const res = await fetch('/api/ai/compare', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                      });
+                      const data = await res.json();
+                      setAiAnalysis(String(data.analysis || ''));
+                    } catch (e) {
+                      setAiAnalysis("I couldn't analyze these right now. Please try again.");
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  }}
+                >
+                  {aiLoading ? 'Analyzing…' : 'Ask AI to compare'}
+                </Button>
+                {aiAnalysis && (
+                  <Button size="sm" variant="secondary" onClick={() => setAiAnalysis("")}>Clear</Button>
+                )}
+              </div>
+              {aiAnalysis && (
+                <div className="mt-3 whitespace-pre-wrap text-sm bg-background/60 border rounded-md p-3">
+                  {aiAnalysis}
+                </div>
+              )}
             </div>
           )}
 

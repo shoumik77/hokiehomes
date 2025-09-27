@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
     maxBedrooms: searchParams.get('maxBedrooms') ? parseInt(searchParams.get('maxBedrooms')!) : undefined,
     minBedrooms: searchParams.get('minBedrooms') ? parseInt(searchParams.get('minBedrooms')!) : undefined,
     maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
+    minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!) : undefined,
+    minBathrooms: searchParams.get('minBathrooms') ? parseFloat(searchParams.get('minBathrooms')!) : undefined,
+    maxBathrooms: searchParams.get('maxBathrooms') ? parseFloat(searchParams.get('maxBathrooms')!) : undefined,
     nearVT: searchParams.get('nearVT') === 'true',
     limit: 50
   };
